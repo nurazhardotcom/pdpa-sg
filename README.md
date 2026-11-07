@@ -232,6 +232,39 @@ SARIF uploads straight into GitHub code scanning (wired in
 Generates a public DPO contact page from `DPO_CONTACT.template.md`.
 
 ---
+## ⚙️ How it works
+
+Scan a project. Match each line against rules. Build a result. Send the result to gates, editors, and auditors.
+
+Copy the block into [pele.run playground](https://pele.run/playground) to view and edit it. Pele renders Mermaid syntax as SVG.
+
+```mermaid
+flowchart TD
+    SRC[Project files] --> SCAN[pdpa.scan reads lines with rg]
+    SCAN --> DETECT[pdpa.detect tests each line]
+    DETECT --> RULES[pdpa.rules PII and secret pack]
+    DETECT --> NRIC[pdpa.nric Mod-11 check]
+    DETECT --> RESULT[Scan result findings counts clean flag]
+    RESULT --> AUDIT[pdpa.audit adds evidence and checklist]
+    AUDIT --> OUT_TEXT[Terminal text]
+    AUDIT --> OUT_JSON[JSON for CI gate]
+    AUDIT --> OUT_SARIF[SARIF 2.1.0 for code scanning]
+    AUDIT --> OUT_REP[HTML and MD report for auditor]
+    OUT_JSON --> CI[CI blocks on critical and high]
+    OUT_SARIF --> IDE[VS Code problems and SARIF Viewer]
+    RULES -. same pack .-> EXPORT[bb export-rules for gitleaks and JSON]
+```
+
+Steps in the diagram:
+
+1. `pdpa.scan` walks the target path with `rg --json` and keeps path, text, and line number.
+2. `pdpa.detect` tests each line against `pdpa.rules`. It skips lines with `pdpa:ignore`.
+3. `pdpa.nric` keeps only NRIC and FIN values with a valid Mod-11 check digit.
+4. The scan result holds `findings`, `counts`, and `clean flag`.
+5. `pdpa.audit` adds published evidence files and `pdpa.checklist` status.
+6. `pdpa.sarif` and `pdpa.report` write JSON, SARIF 2.1.0, HTML, and Markdown. Use `bb scan` for step 1 to 4. Use `bb audit` for step 1 to 6.
+
+---
 
 ## 🧠 How an AI agent should consume this repo
 
