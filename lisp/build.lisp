@@ -23,5 +23,4 @@
   (sb-ext:save-lisp-and-die (namestring out-path)
                              :toplevel (find-symbol "MAIN" "PDPA-SBCL")
                              :executable t
-                             :purify t
-                             :compression t))
+                             :purify t))
