@@ -1,4 +1,4 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; scan.lisp -- batched scanning with live telemetry.
 

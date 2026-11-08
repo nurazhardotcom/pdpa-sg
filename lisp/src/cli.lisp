@@ -1,10 +1,10 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; cli.lisp -- command line interface.
 
 (defun cli-usage ()
   "Return the usage text."
-  (format nil "Usage: pdpa-sbcl --target <path> [options]~%~
+  (format nil "Usage: pdpa-sg --target <path> [options]~%~
 Options:~%~
   --target <path>          File or directory to scan (required).~%~
   --config <path>          JSON config with maxCritical, maxHigh, excludes.~%~
@@ -213,7 +213,7 @@ policy: ~A~%"
 
 (defun main ()
   "Process entry point."
-  (with-simple-restart (abort "Abort pdpa-sbcl.")
+  (with-simple-restart (abort "Abort pdpa-sg.")
     (let* ((argv (rest sb-ext:*posix-argv*))
            (code (handler-case (run-cli argv)
                    (error (condition)

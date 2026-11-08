@@ -1,4 +1,4 @@
-;; pdpa-sg-clj — Babashka tasks
+;; pdpa-sg — Babashka tasks
 ;;
 ;; `:paths` gives BB direct access to src/, resources/, and test/ — same
 ;; view as the Clojure CLI dev alias.  Tasks use `requiring-resolve` to

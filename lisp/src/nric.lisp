@@ -1,4 +1,4 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; nric.lisp -- Singapore NRIC / FIN shape check and Mod-11 checksum.
 ;;;;

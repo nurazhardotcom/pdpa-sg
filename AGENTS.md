@@ -1,4 +1,4 @@
-# AGENTS.md — operator notes for AI agents working on pdpa-sg-clj
+# AGENTS.md — operator notes for AI agents working on pdpa-sg
 
 Owner: Nur Azhar <dev@nurazhar.com> · https://nurazhar.com <!-- pdpa:ignore -->
 Identity rule: all commits as `Nur Azhar <dev@nurazhar.com>`. <!-- pdpa:ignore -->
@@ -8,6 +8,8 @@ Get identity from evidence (`git log`, `gh api user`) — never invent emails.
 
 ```bash
 bb test                          # full suite (needs `rg` on PATH)
+sbcl --non-interactive --load lisp/test/test.lisp   # Common Lisp scanner tests
+sbcl --non-interactive --load lisp/build.lisp       # writes bin/pdpa-sg
 bb audit .                       # self-audit (expect pre-existing fixtures only)
 bb scan <path> --format sarif --out audit.sarif
 bb export-rules --format gitleaks --out gitleaks.toml
@@ -15,7 +17,7 @@ bb export-rules --format gitleaks --out gitleaks.toml
 
 ## Environment warning (this box)
 
-Container has ~2.7GB RAM and **no swap**. The scanner holds `rg --json`
+Container has ~2.7GB RAM and **no swap**. The Babashka scanner holds `rg --json`
 output in memory; `scan` excludes `.git/node_modules/target/out/.cpcache`
 for this reason — do not remove `skip-globs`. Never run `bb audit` on trees
 containing vendored dependencies without excludes; verify with small scopes first.
@@ -35,7 +37,7 @@ is deliberately deferred. When the owner asks for it:
    ```bash
    cd editors/pdpa-vscode
    npm install
-   npm run package     # vsce → pdpa-sg-clj-<version>.vsix
+   npm run package     # vsce → pdpa-sg-<version>.vsix
    vsce publish        # prompts for / uses the PAT
    ```
 4. Requires `bb` + `rg` on PATH at runtime (`pdpa.toolRoot` setting otherwise).

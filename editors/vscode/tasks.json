@@ -1,6 +1,6 @@
 {
   // Copy this file to your project's .vscode/tasks.json.
-  // Requires: pdpa-sg-clj on PATH (or adjust "command" to an absolute bb path).
+  // Requires: pdpa-sg on PATH (or adjust "command" to an absolute bb path).
   // Run via Terminal > Run Task > "pdpa: scan workspace".
   "version": "2.0.0",
   "tasks": [
@@ -8,11 +8,11 @@
       "label": "pdpa: scan workspace",
       "type": "shell",
       "command": "bb scan --format quickfix ${workspaceFolder}",
-      "options": { "cwd": "${workspaceFolder}/pdpa-sg-clj" },
+      "options": { "cwd": "${workspaceFolder}/pdpa-sg" },
       "group": "test",
       "presentation": { "reveal": "always", "panel": "new" },
       "problemMatcher": {
-        "owner": "pdpa-sg-clj",
+        "owner": "pdpa-sg",
         "fileLocation": ["relative", "${workspaceFolder}"],
         "pattern": {
           "regexp": "^(.*):(\\d+): \\[(CRITICAL|HIGH|MEDIUM|LOW)\\] (.*)$",
@@ -27,7 +27,7 @@
       "label": "pdpa: audit to SARIF (for SARIF Viewer)",
       "type": "shell",
       "command": "bb audit ${workspaceFolder} --format sarif --out ${workspaceFolder}/audit.sarif",
-      "options": { "cwd": "${workspaceFolder}/pdpa-sg-clj" },
+      "options": { "cwd": "${workspaceFolder}/pdpa-sg" },
       "group": "test",
       "presentation": { "reveal": "silent" },
       "problemMatcher": []

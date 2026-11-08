@@ -1,4 +1,4 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; json.lisp -- minimal JSON encoder and parser.
 ;;;;

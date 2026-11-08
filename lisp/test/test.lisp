@@ -1,4 +1,4 @@
-;;; Tests for the pdpa-sbcl standalone engine.
+;;; Tests for the pdpa-sg standalone engine.
 ;;; Run from the workspace root:
 ;;;   sbcl --non-interactive --load lisp/test/test.lisp
 (in-package #:cl-user)
@@ -10,12 +10,12 @@
                                   (make-pathname :directory (pathname-directory this-file)
                                                  :name nil :type nil))))
   (pushnew (truename lisp-dir) asdf:*central-registry* :test #'equal)
-  (asdf:load-asd (merge-pathnames "pdpa-sbcl.asd" (truename lisp-dir)))
-  (asdf:load-system :pdpa-sbcl))
+  (asdf:load-asd (merge-pathnames "pdpa-sg.asd" (truename lisp-dir)))
+  (asdf:load-system :pdpa-sg))
 
-(defpackage #:pdpa-sbcl-tests
+(defpackage #:pdpa-sg-tests
   (:use #:cl)
-  (:import-from #:pdpa-sbcl
+  (:import-from #:pdpa-sg
                 #:valid-nric-p
                 #:find-valid-nrics
                 #:classify-line
@@ -43,7 +43,7 @@
                 #:make-rule
                 #:pdpa-rule-id
                 #:pdpa-rule-tier))
-(in-package #:pdpa-sbcl-tests)
+(in-package #:pdpa-sg-tests)
 
 ;;; ---------------------------------------------------------------------
 ;;; Harness
@@ -149,7 +149,7 @@
          (text (scan-result-to-json result))
          (object (json-parse text)))
     (check (hash-table-p object))
-    (check (string= (gethash "tool" object) "pdpa-sbcl"))
+    (check (string= (gethash "tool" object) "pdpa-sg"))
     (check (hash-table-p (gethash "counts" object)))
     (check (= 1 (gethash "critical" (gethash "counts" object))))
     (check (eq :false (gethash "clean" object)))
@@ -172,7 +172,7 @@
            (rules (gethash "rules" driver))
            (results (gethash "results" run)))
       (check (= 1 (length runs)))
-      (check (string= (gethash "name" driver) "pdpa-sbcl"))
+      (check (string= (gethash "name" driver) "pdpa-sg"))
       (check (>= (length rules) 2))
       (check (= 2 (length results)))
       (dotimes (index (length results))
@@ -185,7 +185,7 @@
           (check (integerp (gethash "startLine" region))))))))
 
 (deftest config-load-and-missing
-  (let ((path "/tmp/pdpa-sbcl-test-config.json"))
+  (let ((path "/tmp/pdpa-sg-test-config.json"))
     (with-open-file (stream path :direction :output :if-exists :supersede
                                  :if-does-not-exist :create)
       (write-string "{\"maxCritical\": 1, \"maxHigh\": 2, \"excludes\": [\"fixtures\"]}" stream))
@@ -195,10 +195,10 @@
       (check-equal '("fixtures") (getf config :excludes)))
     (ignore-errors (delete-file path))
     (check-equal nil (load-config nil))
-    (check-signals (load-config "/tmp/pdpa-sbcl-no-such-config.json"))))
+    (check-signals (load-config "/tmp/pdpa-sg-no-such-config.json"))))
 
 (deftest cli-flags-contract
-  (let ((options (pdpa-sbcl::parse-cli-args
+  (let ((options (pdpa-sg::parse-cli-args
                   '("--target" "src" "--config" "c.json" "--format" "sarif"
                     "--out" "o.sarif" "--batch" "64" "--depth" "1" "--velocity" "5000"))))
     (check (string= (getf options :target) "src"))
@@ -208,10 +208,10 @@
     (check (= 64 (getf options :batch)))
     (check (= 1 (getf options :depth)))
     (check (= 5000.0d0 (getf options :velocity))))
-  (let ((options (pdpa-sbcl::parse-cli-args '("--target=src" "--format=json"))))
+  (let ((options (pdpa-sg::parse-cli-args '("--target=src" "--format=json"))))
     (check (string= (getf options :target) "src"))
     (check (string= (getf options :format) "json")))
-  (let ((options (pdpa-sbcl::parse-cli-args '("--nope"))))
+  (let ((options (pdpa-sg::parse-cli-args '("--nope"))))
     (check (stringp (getf options :error)))))
 
 ;;; ---------------------------------------------------------------------
@@ -267,7 +267,7 @@
                                  :label "Only AWS"
                                  :severity :critical
                                  :kind :secret
-                                 :matcher 'pdpa-sbcl::match-aws-key-p
+                                 :matcher 'pdpa-sg::match-aws-key-p
                                  :triggers '("akia")))))
     (check (= 1 rebuilds))
     (strainer-install-rules strainer rules)
@@ -292,7 +292,7 @@
     (check (plusp (getf telemetry :velocity)))
     (check (member (getf telemetry :last-signal) (list :surge :slow :steady)))
     (check (member (getf telemetry :inspection-depth) '(1 2)))
-    (let ((report (pdpa-sbcl::monitor-report (pdpa-sbcl::strainer-monitor strainer))))
+    (let ((report (pdpa-sg::monitor-report (pdpa-sg::strainer-monitor strainer))))
       (check (= 10 (getf report :records)))
       (check (= 1 (getf report :batches))))))
 
@@ -300,7 +300,7 @@
 ;;; Filesystem
 
 (deftest scan-target-skips-output-trees
-  (let ((root "/tmp/pdpa-sbcl-scan-test/"))
+  (let ((root "/tmp/pdpa-sg-scan-test/"))
     (ensure-directories-exist (merge-pathnames "src/" root))
     (ensure-directories-exist (merge-pathnames "node_modules/pkg/" root))
     (with-open-file (stream (merge-pathnames "src/app.txt" root)
@@ -318,7 +318,7 @@
       (check (= 1 (length (getf result :findings))))
       (check (= 1 (getf (getf result :counts) :critical)))
       (check (= 0 (getf (getf result :counts) :high))))
-    (ignore-errors (delete-directory-tree #P"/tmp/pdpa-sbcl-scan-test/" :validate t))))
+    (ignore-errors (delete-directory-tree #P"/tmp/pdpa-sg-scan-test/" :validate t))))
 
 ;;; ---------------------------------------------------------------------
 ;;; Dependency surface

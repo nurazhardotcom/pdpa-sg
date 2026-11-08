@@ -1,4 +1,4 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; sarif.lisp -- SARIF 2.1.0 and JSON report payloads.
 

@@ -1,4 +1,4 @@
-(defpackage #:pdpa-sbcl
+(defpackage #:pdpa-sg
   (:use #:cl)
   (:export
    ;; Entry points
@@ -82,4 +82,4 @@
    #:json-encode
    #:json-encode-to-string
    #:read-file-string))
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)

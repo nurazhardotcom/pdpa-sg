@@ -1,4 +1,4 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; rules.lisp -- the rule pack as mutable CLOS instances.
 ;;;;

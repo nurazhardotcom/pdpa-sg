@@ -1,4 +1,4 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; match.lisp -- zero-dependency matchers for the rule pack.
 ;;;;

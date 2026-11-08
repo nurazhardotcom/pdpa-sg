@@ -1,4 +1,4 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; strainer.lisp -- mutable, velocity-adaptive screening strainer.
 ;;;;

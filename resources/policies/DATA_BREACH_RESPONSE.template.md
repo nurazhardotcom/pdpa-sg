@@ -65,4 +65,4 @@ Run a simulated breach once a year:
 
 ---
 
-*Template compliant with PDPA as of 21 June 2026. Rule version stamp tracked by `pdpa-sg-clj`.*
+*Template compliant with PDPA as of 21 June 2026. Rule version stamp tracked by `pdpa-sg`.*

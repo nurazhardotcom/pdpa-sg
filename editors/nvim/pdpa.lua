@@ -1,7 +1,7 @@
-// pdpa-sg-clj Neovim integration — push scan findings to the quickfix list.
-// Requires: `bb` + `rg` on PATH and pdpa-sg-clj checked out somewhere.
+// pdpa-sg Neovim integration — push scan findings to the quickfix list.
+// Requires: `bb` + `rg` on PATH and pdpa-sg checked out somewhere.
 // Install: copy to ~/.config/nvim/lua/pdpa.lua, then in init.lua:
-//   require("pdpa").setup({ root = vim.fn.expand("~/pdpa-sg-clj") })
+//   require("pdpa").setup({ root = vim.fn.expand("~/pdpa-sg") })
 //
 // Usage: :PdpaScan [path]  (defaults to the current working directory)
 
@@ -11,7 +11,7 @@ local SEVERITY_QFTYPE = { CRITICAL = "E", HIGH = "E", MEDIUM = "W", LOW = "I" }
 
 function M.setup(opts)
   opts = opts or {}
-  local root = opts.root or vim.fn.expand("~/pdpa-sg-clj")
+  local root = opts.root or vim.fn.expand("~/pdpa-sg")
 
   vim.api.nvim_create_user_command("PdpaScan", function(cmd)
     local target = cmd.args ~= "" and cmd.args or vim.fn.getcwd()
@@ -23,7 +23,7 @@ function M.setup(opts)
       .. " --format quickfix"
     local out = vim.fn.systemlist(shellcmd)
     vim.fn.setqflist({}, " ", {
-      title = "pdpa-sg-clj scan",
+      title = "pdpa-sg scan",
       lines = vim.tbl_map(function(line)
         local file, lnum, sev, msg = line:match("^(.-):(%d+): %[(%u+)%] (.*)$")
         if not file then
@@ -39,7 +39,7 @@ function M.setup(opts)
       end, out),
     })
     vim.cmd("copen")
-  end, { nargs = "?", complete = "dir", desc = "pdpa-sg-clj PII/secret scan to quickfix" })
+  end, { nargs = "?", complete = "dir", desc = "pdpa-sg PII/secret scan to quickfix" })
 end
 
 return M

@@ -1,4 +1,4 @@
-;;; Build script for the pdpa-sbcl standalone engine.
+;;; Build script for the pdpa-sg standalone engine.
 ;;; Run from the workspace root:
 ;;;   sbcl --non-interactive --load lisp/build.lisp
 (in-package #:cl-user)
@@ -12,15 +12,15 @@
        (lisp-dir (make-pathname :directory (pathname-directory this-file)
                                 :name nil :type nil))
        (root-dir (merge-pathnames "../" lisp-dir))
-       (out-path (merge-pathnames "bin/pdpa-sbcl" root-dir)))
+       (out-path (merge-pathnames "bin/pdpa-sg" root-dir)))
   (pushnew lisp-dir asdf:*central-registry* :test #'equal)
-  (asdf:load-asd (merge-pathnames "pdpa-sbcl.asd" lisp-dir))
-  (asdf:load-system :pdpa-sbcl)
+  (asdf:load-asd (merge-pathnames "pdpa-sg.asd" lisp-dir))
+  (asdf:load-system :pdpa-sg)
   (ensure-directories-exist out-path)
-  (format t "BUILD: loaded pdpa-sbcl ~A~%"
-          (symbol-value (find-symbol "*TOOLKIT-VERSION*" "PDPA-SBCL")))
+  (format t "BUILD: loaded pdpa-sg ~A~%"
+          (symbol-value (find-symbol "*TOOLKIT-VERSION*" "PDPA-SG")))
   (format t "BUILD: writing ~A~%" (namestring out-path))
   (sb-ext:save-lisp-and-die (namestring out-path)
-                             :toplevel (find-symbol "MAIN" "PDPA-SBCL")
+                             :toplevel (find-symbol "MAIN" "PDPA-SG")
                              :executable t
                              :purify t))

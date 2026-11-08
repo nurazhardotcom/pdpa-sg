@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **pdpa-sg-clj** will be documented in this file.
+All notable changes to **pdpa-sg** will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -60,6 +60,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - CI actions pinned to commit SHAs; `SECURITY.md` and Dependabot added.
 
+## [0.4.0] - 2026-11-08
+
+### Added
+- Common Lisp scanner engine in `lisp/` with ASDF systems `pdpa-sg` and `pdpa-sg/tests`.
+- Zero-dependency SBCL build at `bin/pdpa-sg` with JSON and SARIF 2.1.0 output.
+- Adaptive CLOS strainer with velocity telemetry and tiered rule meshes.
+- 98-check SBCL test harness and CI job.
+
+### Changed
+- Renamed the project and all current repository references to `pdpa-sg`.
+- Renamed the scanner build, ASDF systems, package, and binary to `pdpa-sg`.
+- Updated repository URLs, badges, clone commands, dependency coordinates, VS Code extension ID, editor paths, banners, and SARIF tool name.
+- `bb scan` now points users to `bb shipit` for a nonzero gate.
+
+### Removed
+- The old project name from the current repository tree. Git history keeps earlier commits.
+
+### Preserved
+- Babashka/Clojure task surface: `about`, `init`, `scan`, `redact`, `checklist`, `audit`, `export-rules`, `shipit`, `dpo`, and tests.
+- Rule behavior, 20-rule pack, CLI formats, `pdpa:ignore` semantics, and exit codes 0/1/2.
+
 ## [0.3.0] - 2026-09-06
 
 ### Fixed
@@ -109,13 +130,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-06-21
 
 ### Added
-- Initial public release of pdpa-sg-clj
+- Initial public release of pdpa-sg
 - Singapore PDPA 11-obligation checklist, scanner, redactor, audit CLI
 - 6 policy templates in `resources/policies/`
 - 4 cognitect test-runner test namespaces under `test/pdpa/`
 - GitLab CI
 
-[Unreleased]: https://github.com/nurazhardotcom/pdpa-sg-clj/compare/v0.3.0...main
-[0.3.0]: https://github.com/nurazhardotcom/pdpa-sg-clj/releases/tag/v0.3.0
-[0.2.0]: https://github.com/nurazhardotcom/pdpa-sg-clj/releases/tag/v0.2.0
-[0.1.0]: https://github.com/nurazhardotcom/pdpa-sg-clj/releases/tag/v0.1.0
+[Unreleased]: https://github.com/nurazhardotcom/pdpa-sg/compare/v0.4.0...main
+[0.4.0]: https://github.com/nurazhardotcom/pdpa-sg/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/nurazhardotcom/pdpa-sg/releases/tag/v0.3.0
+[0.2.0]: https://github.com/nurazhardotcom/pdpa-sg/releases/tag/v0.2.0
+[0.1.0]: https://github.com/nurazhardotcom/pdpa-sg/releases/tag/v0.1.0

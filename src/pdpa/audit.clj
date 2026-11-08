@@ -185,7 +185,7 @@
 
     (if (= "text" fmt)
       (do
-        (println "🛡️  pdpa-sg-clj audit")
+        (println "🛡️  pdpa-sg audit")
         (println (format "📦  %s" (version/banner)))
         (println (format "📍  path: %s" path))
         (println (format "🔍  scan: critical=%d high=%d medium=%d low=%d"

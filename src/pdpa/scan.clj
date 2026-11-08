@@ -190,7 +190,7 @@
                          (or (:critical c) 0) (or (:high c) 0)
                          (or (:medium  c) 0) (or (:low c) 0)))
         (doseq [f (:findings result)] (println (fmt-finding f)))
-        (println "[DONE] exit-code 0 means clean"))
+        (println "[DONE] scan complete; use bb shipit for a nonzero gate"))
       (if out
         (do (spit out body)
             (println (str "[SCAN] wrote " out " (" fmt ")")))

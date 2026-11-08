@@ -1,4 +1,4 @@
-# GitHub Actions CI for pdpa-sg-clj — replaces the old .gitlab-ci.yml.
+# GitHub Actions CI for pdpa-sg — replaces the old .gitlab-ci.yml.
 # GitHub is the public source of truth; no mirror job needed.
 
 name: CI
@@ -53,6 +53,43 @@ jobs:
         run: |
           node --version
           clojure -M:test:cljs
+
+  sbcl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install SBCL 2.4.10
+        run: |
+          curl -fsSL -o sbcl.tar.bz2 https://downloads.sourceforge.net/project/sbcl/sbcl/2.4.10/sbcl-2.4.10-x86-64-linux-binary.tar.bz2
+          tar -xjf sbcl.tar.bz2
+          cd sbcl-2.4.10-x86-64-linux
+          sudo sh install.sh
+          sbcl --version
+
+      - name: Run Common Lisp tests
+        run: sbcl --non-interactive --load lisp/test/test.lisp
+
+      - name: Build Common Lisp scanner
+        run: sbcl --non-interactive --load lisp/build.lisp
+
+      - name: Smoke scan
+        run: ./bin/pdpa-sg --target examples/minimal_project --format json > /dev/null
+
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install extension dependencies
+        run: cd editors/pdpa-vscode && npm ci
+
+      - name: Compile extension
+        run: cd editors/pdpa-vscode && npm run compile
 
   lint:
     runs-on: ubuntu-latest

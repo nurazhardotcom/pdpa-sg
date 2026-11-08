@@ -36,7 +36,7 @@ function findToolRoot(): string | undefined {
   }
   const folders = vscode.workspace.workspaceFolders ?? [];
   for (const folder of folders) {
-    const candidate = path.join(folder.uri.fsPath, "pdpa-sg-clj");
+    const candidate = path.join(folder.uri.fsPath, "pdpa-sg");
     try {
       require("fs").statSync(path.join(candidate, "bb.edn"));
       return candidate;
@@ -79,7 +79,7 @@ function runScan(
 
 export function activate(context: vscode.ExtensionContext): void {
   const diagnostics =
-    vscode.languages.createDiagnosticCollection("pdpa-sg-clj");
+    vscode.languages.createDiagnosticCollection("pdpa-sg");
   context.subscriptions.push(diagnostics);
 
   const status = vscode.window.createStatusBarItem(
@@ -94,7 +94,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const folders = vscode.workspace.workspaceFolders;
     if (!toolRoot || !folders) {
       void vscode.window.showWarningMessage(
-        "PDPA: no workspace folder (or pdpa-sg-clj checkout) found."
+        "PDPA: no workspace folder (or pdpa-sg checkout) found."
       );
       return;
     }
@@ -131,7 +131,7 @@ export function activate(context: vscode.ExtensionContext): void {
           SEVERITY[result.level ?? "note"] ??
             vscode.DiagnosticSeverity.Information
         );
-        diag.source = "pdpa-sg-clj";
+        diag.source = "pdpa-sg";
         const list = byFile.get(filePath) ?? [];
         list.push(diag);
         byFile.set(filePath, list);

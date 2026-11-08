@@ -1,6 +1,6 @@
 # Minimal End-to-End Example
 
-This is a tiny project demonstrating how an AI agent uses `pdpa-sg-clj` to walk a skeleton app from zero to Singapore-PDPA-compliant.
+This is a tiny project demonstrating how an AI agent uses `pdpa-sg` to walk a skeleton app from zero to Singapore-PDPA-compliant.
 
 ## State of play
 
@@ -27,7 +27,7 @@ Imagine you just wrote the following `users.clj` (the kind of thing an agent mig
 ## Step 1 — Run the scanner
 
 ```bash
-cd pdpa-sg-clj
+cd pdpa-sg
 bb scan ../minimal_project/
 ```
 
@@ -35,7 +35,7 @@ Output (example):
 
 ```
 [SCAN] ../minimal_project/ — clean? false
-  counts: {:critical 3, :high 0, :medium 0, :low 3}
+  counts: critical=3 high=0 medium=0 low=3
   [CRITICAL] users.clj:6 — Live Singapore NRIC / FIN (Mod-11 valid)
   [CRITICAL] users.clj:6 — Singapore phone number with country code
   ...
@@ -79,12 +79,13 @@ bb audit ../minimal_project/
 Output:
 
 ```
-🛡️  pdpa-sg-clj audit
-📦  pdpa-sg-clj 0.1.0 / Singapore PDPA 2026-06-21
+🛡️  pdpa-sg audit
+📦  pdpa-sg 0.4.0 / Singapore PDPA 2026-06-21
 📍  path: ../minimal_project
 🔍  scan: critical=0 high=0 medium=0 low=0
 📄  evidence found: 0
-📋  CHECKLIST.md auto-ticked: OH YEAH ✅
+📋  CHECKLIST.md auto-tick delta: none
+✅ 0 CRITICAL + 0 HIGH findings — auto-ticked protections apply
 ```
 
 ## Result

@@ -1,10 +1,26 @@
-# pdpa-sg-clj — Architecture
+# pdpa-sg — Architecture
 
 ## Goals
 
 1. **AI-agent consumable** — An LLM reading the README + CHECKLIST in one pass should be able to drive the toolkit to compliance without additional documentation.
 2. **One-shot compliance** — `bb audit <project>` reports whether the project is compliant and exactly what is missing.
-3. **Zero external dependencies for the CLI** — only `rg` + bash are required for the BB tasks; Clojure deps only for the library API.
+3. **Zero external dependencies for the scanner**: The Common Lisp scanner needs SBCL and ASDF only. The Babashka tasks need `rg` and bash. Clojure deps are only for the library API.
+
+## Common Lisp scanner
+
+`lisp/` holds the primary scanner. It is a Common Lisp program. It uses
+SBCL and ASDF only. It does not use Quicklisp, `cl-ppcre`, `yason`, or
+`alexandria`.
+
+- Entry point: `lisp/src/cli.lisp`.
+- Pipeline: `walk.lisp` lists files, `strainer.lisp` screens lines,
+  `scan.lisp` builds the result, and `sarif.lisp` writes JSON or SARIF.
+- Rules: `lisp/src/rules.lisp` holds 20 rules.
+- Tests: `lisp/test/test.lisp` runs 98 checks in 15 tests.
+- Build: `lisp/build.lisp` writes `bin/pdpa-sg`.
+
+The rest of this document describes the Babashka/Clojure task surface
+and the portable API.
 
 ## Layered design
 
@@ -183,7 +199,7 @@ preserved limitation, not a corrected behavior in the portability track.
 
 ## Date 21 June 2026 — what we encode
 
-- `bb version` banner: `pdpa-sg-clj 0.1.0 / Singapore PDPA 2026-06-21`
+- `bb version` banner: `pdpa-sg 0.1.0 / Singapore PDPA 2026-06-21`
 - The "Safe NRIC deadline" is wired into the scan output as a **warning**, not an auto-fail (the code still allows NRICs as input because some legacy systems need them, but the warning is loud).
 - The Data Breach rule uses the **3 calendar days** value.
 - §26 cert list is in `resources/policies/DATA_TRANSFER_AGREEMENT.template.md` (not in code, so we don't have to keep a clojure list in sync with PDPC's evolving cert set).

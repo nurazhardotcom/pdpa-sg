@@ -103,6 +103,6 @@
     (is (every? :id parsed))))
 
 (deftest version-stamp-is-platform-independent-data
-  (is (= "pdpa-sg-clj 0.3.0 / Singapore PDPA 2026-06-21"
+  (is (= "pdpa-sg 0.4.0 / Singapore PDPA 2026-06-21"
          (version/banner)))
   (is (string? (clock/now-stamp))))

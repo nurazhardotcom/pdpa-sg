@@ -44,7 +44,7 @@
 
 ## PII redaction in code (developer hygiene)
 
-- The static-analysis scanner `pdpa-sg-clj scan` is run on every CI build.
+- The static-analysis scanner `bb scan` is run on every CI build.
 - A pre-commit hook blocks commits containing valid Singapore NRICs.
 - PII is never logged in plaintext.
 

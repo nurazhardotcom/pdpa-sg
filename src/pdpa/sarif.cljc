@@ -12,8 +12,8 @@
   "https://json.schemastore.org/sarif-2.1.0.json")
 
 (def sarif-version "2.1.0")
-(def tool-name "pdpa-sg-clj")
-(def repo-uri "https://github.com/nurazhardotcom/pdpa-sg-clj")
+(def tool-name "pdpa-sg")
+(def repo-uri "https://github.com/nurazhardotcom/pdpa-sg")
 
 (defn level-for
   "Map finding severity to a SARIF level. Critical/high break gates."

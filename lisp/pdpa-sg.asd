@@ -1,6 +1,6 @@
-(asdf:defsystem "pdpa-sbcl"
-  :description "PDPA SBCL standalone engine: scan, detect, SARIF."
-  :version "0.3.0"
+(asdf:defsystem "pdpa-sg"
+  :description "PDPA SG Common Lisp scanner: scan, detect, JSON, SARIF."
+  :version "0.4.0"
   :author "Nur Azhar <dev@nurazhar.com>"
   :licence "MIT"
   :serial t
@@ -21,7 +21,7 @@
                (:file "src/config")
                (:file "src/cli")))
 
-(asdf:defsystem "pdpa-sbcl/tests"
-  :description "Self-contained tests for the pdpa-sbcl engine."
-  :depends-on ("pdpa-sbcl")
+(asdf:defsystem "pdpa-sg/tests"
+  :description "Self-contained tests for the pdpa-sg engine."
+  :depends-on ("pdpa-sg")
   :components ((:file "test/test")))

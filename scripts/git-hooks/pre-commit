@@ -9,13 +9,13 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${YELLOW}[pdpa-sg-clj] Scanning staged files for PII...${NC}"
+echo -e "${YELLOW}[pdpa-sg] Scanning staged files for PII...${NC}"
 
 # Get list of staged files (exclude deletions)
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
 
 if [ -z "$STAGED_FILES" ]; then
-    echo -e "${YELLOW}[pdpa-sg-clj] No files to scan.${NC}"
+    echo -e "${YELLOW}[pdpa-sg] No files to scan.${NC}"
     exit 0
 fi
 
@@ -47,11 +47,11 @@ for FILE in $STAGED_FILES; do
                 VALID=$(bb -e "(require '[pdpa.nric :as n]) (println (if (n/valid? \"$HIT\") \"VALID\" \"INVALID\"))" 2>/dev/null || echo "UNKNOWN")
                 # Fail-closed: treat UNKNOWN (bb failed) same as VALID
                 if [ "$VALID" != "INVALID" ]; then
-                    echo -e "${RED}[pdpa-sg-clj] CRITICAL: NRIC found in $FILE: $HIT (checksum: $VALID)${NC}"
+                    echo -e "${RED}[pdpa-sg] CRITICAL: NRIC found in $FILE: $HIT (checksum: $VALID)${NC}"
                     VIOLATIONS=$((VIOLATIONS + 1))
                 fi
             else
-                echo -e "${RED}[pdpa-sg-clj] CRITICAL: NRIC pattern found in $FILE: $HIT (install bb for checksum validation)${NC}"
+                echo -e "${RED}[pdpa-sg] CRITICAL: NRIC pattern found in $FILE: $HIT (install bb for checksum validation)${NC}"
                 VIOLATIONS=$((VIOLATIONS + 1))
             fi
         done
@@ -61,14 +61,14 @@ for FILE in $STAGED_FILES; do
     PHONE_HITS=$(echo "$CONTENT" | grep -oP '(?:\+65\s?)?[89]\d{7}\b' 2>/dev/null | grep -vE '^\d{8}$|^[89]\d{7}$' || true)
     if [ -n "$PHONE_HITS" ]; then
         for HIT in $PHONE_HITS; do
-            echo -e "${RED}[pdpa-sg-clj] HIGH: SG phone number found in $FILE: $HIT${NC}"
+            echo -e "${RED}[pdpa-sg] HIGH: SG phone number found in $FILE: $HIT${NC}"
             VIOLATIONS=$((VIOLATIONS + 1))
         done
     fi
 
     # Check for private keys
     if echo "$CONTENT" | grep -qP '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'; then
-        echo -e "${RED}[pdpa-sg-clj] CRITICAL: Private key found in $FILE${NC}"
+        echo -e "${RED}[pdpa-sg] CRITICAL: Private key found in $FILE${NC}"
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
 
@@ -95,7 +95,7 @@ for FILE in $STAGED_FILES; do
         SECRET_HITS=$(echo "$CONTENT" | grep -oP "$PATTERN" 2>/dev/null || true)
         if [ -n "$SECRET_HITS" ]; then
             for HIT in $SECRET_HITS; do
-                echo -e "${RED}[pdpa-sg-clj] CRITICAL: Secret token found in $FILE: ${HIT:0:8}...${NC}"
+                echo -e "${RED}[pdpa-sg] CRITICAL: Secret token found in $FILE: ${HIT:0:8}...${NC}"
                 VIOLATIONS=$((VIOLATIONS + 1))
             done
         fi
@@ -104,11 +104,11 @@ done
 
 if [ $VIOLATIONS -gt 0 ]; then
     echo ""
-    echo -e "${RED}[pdpa-sg-clj] BLOCKED: $VIOLATIONS PII/secret violation(s) found.${NC}"
+    echo -e "${RED}[pdpa-sg] BLOCKED: $VIOLATIONS PII/secret violation(s) found.${NC}"
     echo -e "${RED}Fix the issues above, or use 'git commit --no-verify' only if you${NC}"
     echo -e "${RED}are certain the data is test/example data.${NC}"
     exit 1
 fi
 
-echo -e "${YELLOW}[pdpa-sg-clj] OK — no PII/secret violations found.${NC}"
+echo -e "${YELLOW}[pdpa-sg] OK — no PII/secret violations found.${NC}"
 exit 0

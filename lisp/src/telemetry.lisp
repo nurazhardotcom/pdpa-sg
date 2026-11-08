@@ -1,4 +1,4 @@
-(in-package #:pdpa-sbcl)
+(in-package #:pdpa-sg)
 
 ;;;; telemetry.lisp -- throughput and velocity measurement.
 ;;;;

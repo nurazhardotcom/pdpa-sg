@@ -3,7 +3,7 @@
 > **The single source of truth.** Tick each box as you complete it. Boxes marked with `<!-- agent:verify-* -->` are auto-ticked by `bb checklist` when its scanner passes.
 
 **Last rule update:** 21 June 2026 — runs against Singapore PDPA (revised through 2026 amendments).
-**Toolkit version:** pdpa-sg-clj (run `bb version` for stamp)
+**Toolkit version:** pdpa-sg (run `bb version` for stamp)
 
 ---
 
@@ -192,7 +192,7 @@ For AI/automated decision-making involving personal data:
 - [ ] NRIC/FIN field removed from forms (or replaced with masked `****567A`)
 - [ ] No NRIC stored in plaintext; if absolutely required, salted-hash + encryption-at-rest
 - [ ] All historical NRIC data pseudonymised or deleted by 31 Dec 2026
-- [ ] Tooling scans run via `pdpa-sg-clj`'s redactor before commit
+- [ ] Tooling scans run via `pdpa-sg`'s redactor before commit
 
 Run `bb scan` to auto-verify the protected-item markers above.
 
@@ -204,7 +204,7 @@ Run `bb scan` to auto-verify the protected-item markers above.
 - [ ] Refresh Privacy Policy if any new data category is added
 - [ ] Verify DPO contact is still live and reachable
 - [ ] Review access logs for unexpected access patterns
-- [ ] Confirm `pdpa-sg-clj` rule-stamp is current (`bb version`)
+- [ ] Confirm `pdpa-sg` rule-stamp is current (`bb version`)
 
 ---
 

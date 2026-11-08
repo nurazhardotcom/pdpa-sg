@@ -22,7 +22,7 @@
 (deftest sarif-driver-rules
   (testing "driver carries name, version, and one rule per finding id"
     (let [driver (get-in (sarif/scan->sarif sample) [:runs 0 :tool :driver])]
-      (is (= "pdpa-sg-clj" (:name driver)))
+      (is (= "pdpa-sg" (:name driver)))
       (is (string? (:version driver)))
       (is (= ["pdpa/aws-key" "pdpa/email-live" "pdpa/nric-live"]
              (mapv :id (:rules driver)))))))
