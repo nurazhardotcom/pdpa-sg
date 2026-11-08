@@ -4,7 +4,7 @@
 [![CI](https://github.com/nurazhardotcom/pdpa-sg/actions/workflows/ci.yml/badge.svg)](https://github.com/nurazhardotcom/pdpa-sg/actions)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
-`pdpa-sg` · current `main` · Last verified 2026-11-08 · MIT ©2026 Nur Azhar
+`pdpa-sg v0.5.0` · Last verified 2026-11-08 · MIT ©2026 Nur Azhar
 
 > Singapore PDPA compliance toolkit. One runtime: SBCL.
 
