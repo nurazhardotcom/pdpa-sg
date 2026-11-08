@@ -1,43 +1,63 @@
-# AGENTS.md — operator notes for AI agents working on pdpa-sg
+# AGENTS.md - operator notes for AI agents
 
 Owner: Nur Azhar <dev@nurazhar.com> · https://nurazhar.com <!-- pdpa:ignore -->
 Identity rule: all commits as `Nur Azhar <dev@nurazhar.com>`. <!-- pdpa:ignore -->
-Get identity from evidence (`git log`, `gh api user`) — never invent emails.
+Get identity from evidence (`git log`, `gh api user`). Do not invent an email.
+
+## Runtime
+
+Use SBCL 2.4 or newer. Use ASDF only. Do not add external Lisp libraries.
+Do not add a second runtime.
 
 ## Everyday commands
 
 ```bash
-bb test                          # full suite (needs `rg` on PATH)
-sbcl --non-interactive --load lisp/test/test.lisp   # Common Lisp scanner tests
-sbcl --non-interactive --load lisp/build.lisp       # writes bin/pdpa-sg
-bb audit .                       # self-audit (expect pre-existing fixtures only)
-bb scan <path> --format sarif --out audit.sarif
-bb export-rules --format gitleaks --out gitleaks.toml
+sbcl --non-interactive --load lisp/test/test.lisp
+sbcl --non-interactive --load lisp/build.lisp
+./bin/pdpa-sg --target /path/to/project --format json
+./bin/pdpa-sg --target /path/to/project --format sarif --out audit.sarif
 ```
 
-## Environment warning (this box)
+Run the test suite before a commit. Build the scanner after a source change.
+`bin/pdpa-sg` is build output. Git ignores it.
 
-Container has ~2.7GB RAM and **no swap**. The Babashka scanner holds `rg --json`
-output in memory; `scan` excludes `.git/node_modules/target/out/.cpcache`
-for this reason — do not remove `skip-globs`. Never run `bb audit` on trees
-containing vendored dependencies without excludes; verify with small scopes first.
+## Environment warning
 
-## ⏳ PENDING — VS Code Marketplace publish (OWNER does this, not agents)
+The host has about 2.7 GB RAM and no swap. The scanner reads files line by line.
+Keep scans on small scopes. Do not scan large dependency trees.
 
-The extension scaffold at `editors/pdpa-vscode/` is complete, type-checks
-clean (`npm run compile`), and is publicly visible in this repo. Publishing
-is deliberately deferred. When the owner asks for it:
+The scanner skips `.git`, `node_modules`, `target`, `out`, and `.cpcache`.
+Keep these skip rules.
 
-1. **Confirm the publisher ID first.** Scaffold says `nurazhardotcom`
-   ( = GitHub login). It MUST equal a Marketplace publisher the owner owns.
-   Do not change it on a guess — ask.
-2. **You need a Marketplace PAT** (Azure DevOps → Personal Access Tokens →
-   `Marketplace > Manage` scope). Agents cannot mint this; the owner pastes it.
-3. Then:
-   ```bash
-   cd editors/pdpa-vscode
-   npm install
-   npm run package     # vsce → pdpa-sg-<version>.vsix
-   vsce publish        # prompts for / uses the PAT
-   ```
-4. Requires `bb` + `rg` on PATH at runtime (`pdpa.toolRoot` setting otherwise).
+## File rules
+
+- Keep the active tree free of `.clj`, `.cljc`, `.cljs`, `.edn`, and
+  `package.json` files.
+- Keep the scanner and tests in `lisp/`.
+- Keep policy templates in `resources/policies/`.
+- Keep the checklist manual. Do not add auto-tick code.
+- Do not add a redaction command. The scanner reports findings. It does not edit
+  target files.
+- Preserve unrelated work. Stage only files for the current task.
+
+## Verification
+
+```bash
+sbcl --non-interactive --load lisp/test/test.lisp
+sbcl --non-interactive --load lisp/build.lisp
+find . -path ./.git -prune -o -type f \
+  \( -name '*.clj' -o -name '*.cljc' -o -name '*.cljs' -o -name '*.edn' -o -name 'package.json' \) -print
+```
+
+The test final line must be:
+
+```text
+TESTS DONE checks=98 tests=15 failures=0
+```
+
+The `find` command must print nothing.
+
+## Commit rules
+
+Use a focused commit message. Do not push or publish unless the owner asks.
+Do not change `VERSION` unless the task is a release.

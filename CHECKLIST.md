@@ -1,218 +1,240 @@
 # Singapore PDPA Compliance Checklist
 
-> **The single source of truth.** Tick each box as you complete it. Boxes marked with `<!-- agent:verify-* -->` are auto-ticked by `bb checklist` when its scanner passes.
+> **This checklist is manual.** Tick each box when the evidence exists. The
+> scanner does not tick boxes. The scanner does not edit this file.
 
-**Last rule update:** 21 June 2026 — runs against Singapore PDPA (revised through 2026 amendments).
-**Toolkit version:** pdpa-sg (run `bb version` for stamp)
+**Last rule update:** 21 June 2026. The checklist follows Singapore PDPA as
+revised through the 2026 amendments.
+
+**Toolkit version:** `pdpa-sg` (see `VERSION`).
+
+**Internal targets:** Items marked **Internal target** are organisation policy
+choices. They are not quoted from the PDPA. Change them to match your own legal
+review.
 
 ---
 
 ## Summary
 
-```
-[X] auto-tick when scanner passes
-[ ] manual action required
-```
-
-| # | Obligation | Status | Auto? |
+| # | Obligation | Status | Scanner support |
 |---|---|---|---|
-| 1 | Consent | [ ] | manual |
-| 2 | Purpose Limitation | [ ] | manual + scan |
-| 3 | Notification | [ ] | manual |
-| 4 | Accuracy | [ ] | manual |
-| 5 | Protection | [ ] | partial + scan |
-| 6 | Retention Limitation | [ ] | manual |
-| 7 | Transfer Limitation (§26) | [ ] | manual |
-| 8 | Access & Correction (DSR) | [ ] | manual |
-| 9 | Withdrawal of Consent | [ ] | manual |
-| 10 | Data Breach Notification | [ ] | manual |
-| 11 | Accountability / DPO | [ ] | manual |
+| 1 | Consent | [ ] | no |
+| 2 | Purpose Limitation | [ ] | partial |
+| 3 | Notification | [ ] | no |
+| 4 | Accuracy | [ ] | no |
+| 5 | Protection | [ ] | partial |
+| 6 | Retention Limitation | [ ] | no |
+| 7 | Transfer Limitation (section 26) | [ ] | partial |
+| 8 | Access and Correction (DSR) | [ ] | no |
+| 9 | Withdrawal of Consent | [ ] | no |
+| 10 | Data Breach Notification | [ ] | no |
+| 11 | Accountability and DPO | [ ] | partial |
 
 ---
 
 ## 1. Consent Obligation
 
-> No collection / use / disclosure of personal data without the individual's consent — or another lawful basis.
+> Do not collect, use, or disclose personal data without consent or another
+> lawful basis.
 
-- [ ] A **consent form** is in place at every collection point — see `policies/CONSENT_FORM.md`
-- [ ] Consent records store: timestamp, scope, opt-in text, IP, version of policy
-- [ ] Withdrawal of consent is **as easy as** opt-in (same channel, no friction)
-- [ ] Exceptions document (e.g. legitimate interests, legal obligation) is reviewed annually
-
-<!-- agent:verify-consent -->
+- [ ] A consent form exists at each collection point. See
+  `resources/policies/CONSENT_FORM.template.md`.
+- [ ] Consent records store the timestamp, scope, opt-in text, source, and policy
+  version.
+- [ ] Withdrawal is as easy as opt-in.
+- [ ] The exceptions register is reviewed each year.
 
 ---
 
 ## 2. Purpose Limitation Obligation
 
-> Collect for a stated purpose; don't repurpose without fresh consent.
+> Collect personal data only for purposes that a reasonable person would
+> consider appropriate.
 
-- [ ] Every data field in your schema has a **purpose statement** (table comment or schema doc)
-- [ ] You do **not** train ML/AI models on user data without explicit consent — see **AI Governance** section below
-- [ ] If you depend on scraped / third-party data, document its provenance
-
-<!-- agent:verify-purpose -->
+- [ ] Each data field has a documented purpose.
+- [ ] The privacy notice states each purpose.
+- [ ] New purposes go through a review before collection.
+- [ ] Analytics and secondary use have a separate lawful basis.
 
 ---
 
 ## 3. Notification Obligation
 
-> Tell individuals what you do with their data — at the point of collection.
+> Tell the individual the purpose, the likely use, and the contact for questions.
 
-- [ ] **Privacy Policy** is published and discoverable from every entry point — see `policies/PRIVACY_POLICY.md`
-- [ ] Notification happens **at or before** collection (banner / form footer)
-- [ ] Notification lists: identity of collector, purpose, recipients, retention, DPO contact, DSR channels
-
-<!-- agent:verify-notification -->
+- [ ] The privacy notice is available before or at collection.
+- [ ] The notice names the organisation and the DPO contact.
+- [ ] The notice lists the main data categories and recipients.
+- [ ] The notice states the retention approach.
 
 ---
 
 ## 4. Accuracy Obligation
 
-> Personal data must be accurate and complete if it affects decisions.
+> Take reasonable steps to ensure that personal data is accurate and complete.
 
-- [ ] Data-validation middleware enforced at write (e.g. `ValidateEmail`, `ValidatePhoneSG`)
-- [ ] Correction requests are honoured within **30 calendar days**
-- [ ] Stale or unverified data is flagged after **180 days** for review
+- [ ] Individuals can view and correct their data.
+- [ ] Data-quality checks exist at entry and import.
+- [ ] Correction requests have an owner and a response path.
+- [ ] Downstream systems receive corrections.
 
 ---
 
 ## 5. Protection Obligation
 
-> Reasonable security arrangements to prevent unauthorised access, collection, use, disclosure, copying, modification, disposal.
+> Use reasonable security arrangements to protect personal data.
 
-- [ ] **Encryption at rest** for personal-data fields (AES-256 or equivalent)
-- [ ] **Encryption in transit** (TLS ≥ 1.2)
-- [ ] Access control (RBAC) with quarterly access-list review
-- [ ] Audit logging of all data-access events, retained 1 year minimum
-- [ ] 2FA for all data-accessing roles
-- [ ] Penetration test annually
-- [ ] **No hardcoded secrets** in tracked files
-- [ ] **No raw NRICs** in code (singular reducer written to disk) — `pdpa.sg_clj/redact` strips them
-
-<!-- agent:verify-protection -->
+- [ ] Encryption at rest for personal-data fields.
+- [ ] Encryption in transit. Use TLS 1.2 or newer.
+- [ ] Role-based access control.
+- [ ] Access-list review each quarter.
+- [ ] Audit logging for data access.
+- [ ] Two-factor authentication for data-access roles.
+- [ ] Penetration test each year.
+- [ ] No hardcoded secrets in tracked files.
+- [ ] No raw NRIC or FIN values in code or test data. Use fictional values with
+  the `pdpa:ignore` marker.
+- [ ] The scanner runs on the project:
+  `./bin/pdpa-sg --target . --format json`.
 
 ---
 
 ## 6. Retention Limitation Obligation
 
-> Stop retaining personal data (or remove the link to the individual) when the purpose ends.
+> Stop retaining personal data, or remove the link to the individual, when the
+> purpose ends.
 
-- [ ] Retention schedule published per data category
-- [ ] Automated purge job runs (nightly or weekly)
-- [ ] Soft-delete kept for **≤ 90 days** unless legal hold
-- [ ] Anonymisation or pseudonymisation applied before any analytics use
-
-<!-- agent:verify-retention -->
-
----
-
-## 7. Transfer Limitation Obligation (§26)
-
-> Overseas transfers only to organisations under a comparable standard.
-
-Choose **at least one** mechanism and tick that box:
-
-- [ ] APEC **CBPR** (Cross-Border Privacy Rules) certification
-- [ ] APEC **PRP** (Privacy Recognition for Processors) certification
-- [ ] EU **Standard Contractual Clauses** (SCCs)
-- [ ] Singapore **Binding Corporate Rules**
-- [ ] PDPC-approved code of practice
-- [ ] Recipient country whitelisted (PDPC decision)
-
-Document per recipient in `policies/DATA_TRANSFER_AGREEMENT.md`.
+- [ ] A retention schedule exists for each data category.
+- [ ] An automated purge job runs.
+- [ ] **Internal target:** soft-delete data is kept for no more than 90 days,
+  unless a legal hold applies.
+- [ ] Anonymisation or pseudonymisation is applied before analytics use.
+- [ ] Legal holds are documented and reviewed.
 
 ---
 
-## 8. Access & Correction Obligation (Data Subject Requests — DSRs)
+## 7. Transfer Limitation Obligation (section 26)
 
-> Individuals may request: (a) access to their data, (b) correction, (c) cessation.
+> Send personal data overseas only when the receiving organisation is bound by a
+> comparable standard.
 
-- [ ] DSR endpoint exists (e.g. `GET /api/dsr/export?user_id=…`, `POST /api/dsr/rectify`)
-- [ ] Identity-verification flow before disclosing data
-- [ ] Standard response time **≤ 30 calendar days** (PDPA default; can extend to 60 with notice)
-- [ ] Free of charge for the first request per year
+- [ ] Choose at least one transfer mechanism:
+  - [ ] APEC CBPR
+  - [ ] APEC PRP
+  - [ ] EU SCCs
+  - [ ] Binding corporate rules
+  - [ ] Contract with comparable safeguards
+- [ ] The transfer register lists the country, recipient, and mechanism.
+- [ ] The recipient has a breach-notification duty.
+- [ ] The recipient has a deletion duty at contract end.
+
+---
+
+## 8. Access and Correction Obligation
+
+> On request, give the individual access to their personal data and information
+> about its use. Correct errors on request.
+
+- [ ] A data subject request channel is public.
+- [ ] The team logs each request and its deadline.
+- [ ] The response package includes the data, the purposes, and the recipients.
+- [ ] Correction requests update all linked systems.
+- [ ] Refusal reasons are documented and reviewable.
 
 ---
 
 ## 9. Withdrawal of Consent Obligation
 
-> Withdrawal must work as easily as opt-in; reasonable notice given; consequences explained.
+> Withdrawal must work as easily as opt-in. Explain the consequences.
 
-- [ ] Withdrawal endpoint exists: `POST /api/consent/withdraw`
-- [ ] All downstream processing stops (or transitions to anonymised aggregate) within 7 days
-- [ ] User receives confirmation including any unavoidable retained-financial-record obligations
+- [ ] A withdrawal endpoint or channel exists.
+- [ ] **Internal target:** downstream processing stops, or moves to an
+  anonymised aggregate, within 7 days.
+- [ ] The individual receives a confirmation.
+- [ ] The confirmation explains any records that must be kept by law.
 
 ---
 
 ## 10. Data Breach Notification Obligation
 
-> Notify PDPC + affected individuals when a breach results in (a) significant harm, OR (b) ≥ 500 affected individuals.
+> Notify the PDPC and affected individuals when a breach is notifiable.
 
-- [ ] **Breach response plan** exists — see `policies/DATA_BREACH_RESPONSE.md`
-- [ ] PDPC notification submitted **within 3 calendar days** of assessment
-- [ ] Affected-individual notification goes out within 30 days
-- [ ] Mock drill annually (Tabletop)
-- [ ] DPO available 24/7 during a breach
-
-<!-- agent:verify-breach -->
-
----
-
-## 11. Accountability / DPO Designation Obligation
-
-> Every organisation must designate ≥ 1 Data Protection Officer and publish a business contact.
-
-- [ ] **DPO named** with full name + business email — see `policies/DPO_CONTACT.md`
-- [ ] DPO contact published on homepage footer
-- [ ] DPO role accountable to senior management
-- [ ] DPO training refreshed annually
-- [ ] pdpa-era logs preserved for **3+ years**
-
-<!-- agent:verify-dpo -->
+- [ ] A breach response plan exists. See
+  `resources/policies/DATA_BREACH_RESPONSE.template.md`.
+- [ ] The team assesses a breach without delay.
+- [ ] The PDPC notification is submitted within 3 calendar days after assessment.
+- [ ] **Internal target:** affected individuals are notified within 30 days.
+- [ ] A tabletop drill runs each year.
+- [ ] The DPO is reachable during a breach.
 
 ---
 
-## 🤖 AI Governance Addendum (2026 PDPC guidance)
+## 11. Accountability and DPO Designation Obligation
 
-For AI/automated decision-making involving personal data:
+> Designate at least one Data Protection Officer and publish a business contact.
 
-- [ ] **Transparency** — users informed when an automated decision affects them
-- [ ] **Explainability** — model outputs are interpretable to non-experts
-- [ ] **Data-minimisation** — only fields required for the decision are processed
-- [ ] **Human review** — a human-in-the-loop path exists for adverse decisions
-- [ ] **No model retraining on user data without opt-in consent** (if collecting for ML)
-
----
-
-## 🇸🇬 Safe NRIC Addendum (effective 31 December 2026)
-
-> PDPC requires organisations to **stop using full NRICs** for authentication, identification or routine identification purposes. Avoid collecting them entirely unless legally required.
-
-- [ ] NRIC/FIN field removed from forms (or replaced with masked `****567A`)
-- [ ] No NRIC stored in plaintext; if absolutely required, salted-hash + encryption-at-rest
-- [ ] All historical NRIC data pseudonymised or deleted by 31 Dec 2026
-- [ ] Tooling scans run via `pdpa-sg`'s redactor before commit
-
-Run `bb scan` to auto-verify the protected-item markers above.
+- [ ] A DPO is named with a business email. See
+  `resources/policies/DPO_CONTACT.template.md`.
+- [ ] The DPO contact is published.
+- [ ] The DPO has a direct line to senior management.
+- [ ] DPO training is refreshed each year.
+- [ ] **Internal target:** PDPA-era logs are kept for 3 years or longer.
 
 ---
 
-## 📋 Quarterly Review
+## AI Governance Addendum
 
-- [ ] Re-run `bb audit .` on the production codebase
-- [ ] Refresh Privacy Policy if any new data category is added
-- [ ] Verify DPO contact is still live and reachable
-- [ ] Review access logs for unexpected access patterns
-- [ ] Confirm `pdpa-sg` rule-stamp is current (`bb version`)
+For automated decision-making that uses personal data:
+
+- [ ] Tell users when an automated decision affects them.
+- [ ] Keep model outputs explainable to non-experts.
+- [ ] Process only the fields that the decision needs.
+- [ ] Provide a human review path for adverse decisions.
+- [ ] Do not train models on user data without a lawful basis.
 
 ---
 
-## 🤖 How `bb checklist` auto-ticks
+## Safe NRIC Addendum
 
-The CLI reads `CHECKLIST.md`, looks for HTML-comment markers like
-`<!-- agent:verify-protection -->` after a numbered obligation heading,
-and ticks the **first** `[ ]` checkbox under that heading **iff** the relevant
-scanner passes. The mapping is in `src/pdpa/checklist.cljc`.
+> PDPC requires organisations to stop using full or partial NRIC numbers for
+> **authentication** by 31 December 2026. **Identification** remains permitted
+> under existing collection rules. Collect NRIC only when it is needed and
+> lawful.
 
-Manual ticks (any box without an auto-marker) are still your responsibility.
+Primary source:
+[PDPC press release, 2 February 2026](https://www.pdpc.gov.sg/media-events/organisations-to-cease-the-use-of-nric-numbers-for-authentication-by-31-december-2026).
+
+- [ ] NRIC is not used as a password, login name, or authentication factor.
+- [ ] NRIC authentication flows are removed or replaced by 31 December 2026.
+- [ ] NRIC is collected only for identification where the law or a genuine need
+  requires it.
+- [ ] NRIC values are masked in displays where full values are not needed.
+- [ ] NRIC values are encrypted at rest and access is limited.
+- [ ] Historical NRIC data used for authentication is retired by 31 December
+  2026.
+- [ ] The scanner runs before commit:
+  `./bin/pdpa-sg --target . --format json`.
+
+---
+
+## Quarterly Review
+
+- [ ] Run `./bin/pdpa-sg --target . --format sarif --out audit.sarif`.
+- [ ] Review scanner findings and close or accept each one.
+- [ ] Refresh the privacy policy when a data category changes.
+- [ ] Verify the DPO contact is live.
+- [ ] Review access logs for unusual access.
+- [ ] Confirm the rule stamp in `lisp/src/version.lisp` is current.
+
+---
+
+## How to use this checklist
+
+1. Read the obligation.
+2. Collect evidence.
+3. Tick the box by hand.
+4. Record the evidence location in your project notes.
+5. Repeat the review each quarter.
+
+The scanner gives evidence for some protection and transfer items. It does not
+give legal advice. It does not replace a DPO review.

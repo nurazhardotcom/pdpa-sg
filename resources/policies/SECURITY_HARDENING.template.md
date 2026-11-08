@@ -42,10 +42,10 @@
 - Encrypted backups stored in a separate availability zone.
 - Tested quarterly, recovery-time objective ≤ 4 hours.
 
-## PII redaction in code (developer hygiene)
+## PII detection in code (developer hygiene)
 
-- The static-analysis scanner `bb scan` is run on every CI build.
-- A pre-commit hook blocks commits containing valid Singapore NRICs.
+- The static-analysis scanner `bin/pdpa-sg --target . --format json` runs on every CI build.
+- The scanner reports valid Singapore NRICs. It does not edit files.
 - PII is never logged in plaintext.
 
 ## Incident detection

@@ -1,6 +1,4 @@
-# GitHub Actions CI for pdpa-sg — replaces the old .gitlab-ci.yml.
-# GitHub is the public source of truth; no mirror job needed.
-
+# CI for pdpa-sg. The repository has one runtime: SBCL.
 name: CI
 
 on:
@@ -12,48 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install Babashka
-        run: |
-          curl -sLO https://raw.githubusercontent.com/babashka/babashka/master/install
-          chmod +x install
-          sudo ./install
-
-      # ClojureScript 1.12.145 pulls a Closure Compiler that requires Java 21
-      # (class file 65.0), so the portable Node suite cannot run on 17.
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Install Clojure CLI
-        run: |
-          curl -fsSLO https://download.clojure.org/install/linux-install-1.12.3.1577.sh
-          chmod +x linux-install-1.12.3.1577.sh
-          sudo ./linux-install-1.12.3.1577.sh
-          clojure -Sdescribe
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-
-      - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
-
-      - name: Run Babashka/native and portable JVM tests
-        run: |
-          bb test
-          clojure -M:test
-
-      - name: Run portable ClojureScript tests on Node
-        run: |
-          node --version
-          clojure -M:test:cljs
-
   sbcl:
     runs-on: ubuntu-latest
     steps:
@@ -70,95 +26,33 @@ jobs:
       - name: Run Common Lisp tests
         run: sbcl --non-interactive --load lisp/test/test.lisp
 
-      - name: Build Common Lisp scanner
+      - name: Build scanner
         run: sbcl --non-interactive --load lisp/build.lisp
 
-      - name: Smoke scan
-        run: ./bin/pdpa-sg --target examples/minimal_project --format json > /dev/null
+      - name: Check JSON scanner output
+        run: |
+          set -euo pipefail
+          mkdir -p .ci-smoke
+          printf 'No personal data.\n' > .ci-smoke/input.txt
+          ./bin/pdpa-sg --target .ci-smoke --format json --out /tmp/pdpa-scan.json
+          grep -q '"clean":true' /tmp/pdpa-scan.json
 
-  extension:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-
-      - name: Install extension dependencies
-        run: cd editors/pdpa-vscode && npm ci
-
-      - name: Compile extension
-        run: cd editors/pdpa-vscode && npm run compile
+      - name: Check SARIF scanner output
+        run: |
+          set -euo pipefail
+          ./bin/pdpa-sg --target .ci-smoke --format sarif --out /tmp/pdpa-scan.sarif
+          grep -q '"version":[[:space:]]*"2.1.0"' /tmp/pdpa-scan.sarif
 
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install clj-kondo
+      - name: Check for legacy files
         run: |
-          curl -sLO https://github.com/clj-kondo/clj-kondo/releases/download/v2026.08.04/clj-kondo-2026.08.04-linux-amd64.zip
-          curl -sLO https://github.com/clj-kondo/clj-kondo/releases/download/v2026.08.04/clj-kondo-2026.08.04-linux-amd64.zip.sha256
-          echo "$(cat clj-kondo-2026.08.04-linux-amd64.zip.sha256)  clj-kondo-2026.08.04-linux-amd64.zip" | sha256sum -c -
-          mkdir -p kondo-tmp && unzip -q clj-kondo-2026.08.04-linux-amd64.zip -d kondo-tmp
-          sudo install -m 0755 kondo-tmp/clj-kondo /usr/local/bin/clj-kondo
-          clj-kondo --version
-
-      - name: Lint (errors and warnings fail)
-        run: clj-kondo --lint src test scripts --fail-level warning
-
-  scan:
-    # Security scan is independent of unit tests so SARIF uploads even
-    # when tests fail — findings are triaged in the Security tab.
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install Babashka
-        run: |
-          curl -sLO https://raw.githubusercontent.com/babashka/babashka/master/install
-          chmod +x install
-          sudo ./install
-
-      - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
-
-      - name: PDPA audit to SARIF
-        run: bb audit . --format sarif --out audit.sarif --exclude test/
-
-      # Code-scanning upload needs security-events:write, which Dependabot's
-      # token does not carry, so it 403s on its own PRs. The SARIF is still
-      # produced above, so the artifact is inspectable in the run log.
-      - name: Upload SARIF to code scanning
-        if: github.actor != 'dependabot[bot]'
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
-        with:
-          sarif_file: audit.sarif
-
-  example-audit:
-    # Exercises the documented onboarding path end to end so README drift
-    # breaks CI: `bb scan examples/minimal_project` (README CLI usage)
-    # plus `bb audit examples/minimal_project` (examples/minimal_project
-    # Step 4). Both must exit 0 on a clean example tree.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install Babashka
-        run: |
-          curl -sLO https://raw.githubusercontent.com/babashka/babashka/master/install
-          chmod +x install
-          sudo ./install
-
-      - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
-
-      - name: Documented example-project scan
-        run: bb scan examples/minimal_project
-
-      - name: Documented example-project audit
-        run: bb audit examples/minimal_project
+          set -euo pipefail
+          bad=$(find . -path ./.git -prune -o -type f \( -name '*.clj' -o -name '*.cljc' -o -name '*.cljs' -o -name '*.edn' -o -name 'package.json' \) -print)
+          if [ -n "$bad" ]; then
+            printf '%s\n' "$bad"
+            exit 1
+          fi

@@ -1,242 +1,204 @@
-# pdpa-sg — Architecture
+# pdpa-sg - Architecture
 
 ## Goals
 
-1. **AI-agent consumable** — An LLM reading the README + CHECKLIST in one pass should be able to drive the toolkit to compliance without additional documentation.
-2. **One-shot compliance** — `bb audit <project>` reports whether the project is compliant and exactly what is missing.
-3. **Zero external dependencies for the scanner**: The Common Lisp scanner needs SBCL and ASDF only. The Babashka tasks need `rg` and bash. Clojure deps are only for the library API.
+1. Use one runtime: SBCL.
+2. Keep the scanner deterministic and easy to audit.
+3. Keep the scan result small enough for an AI agent to read.
+4. Keep the compliance pack useful without a service or database.
+5. Keep the build free of external Lisp libraries.
 
-## Common Lisp scanner
+## Runtime
 
-`lisp/` holds the primary scanner. It is a Common Lisp program. It uses
-SBCL and ASDF only. It does not use Quicklisp, `cl-ppcre`, `yason`, or
-`alexandria`.
+- Compiler and runtime: SBCL 2.4 or newer.
+- Build and system definition: ASDF.
+- External Lisp libraries: none.
+- Quicklisp: not used.
+- Build output: `bin/pdpa-sg`.
 
-- Entry point: `lisp/src/cli.lisp`.
-- Pipeline: `walk.lisp` lists files, `strainer.lisp` screens lines,
-  `scan.lisp` builds the result, and `sarif.lisp` writes JSON or SARIF.
-- Rules: `lisp/src/rules.lisp` holds 20 rules.
-- Tests: `lisp/test/test.lisp` runs 98 checks in 15 tests.
-- Build: `lisp/build.lisp` writes `bin/pdpa-sg`.
+The source is Common Lisp. The repository has no second implementation.
 
-The rest of this document describes the Babashka/Clojure task surface
-and the portable API.
+## Module map
 
-## Layered design
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  CLI surface (bb.edn tasks)                                  │
-│  about, init, scan, redact, checklist, audit, export-rules, │
-│  dpo, test, shipit, blog-scan, install-hook                 │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Public API (src/pdpa/core.clj)                              │
-│  redact, scan, checklist-status, audit, fill-policy,        │
-│  to-sarif, audit-report, rule-pack, version                 │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-        ┌──────────────┼──────────────┬──────────────────┐
-        ▼              ▼              ▼                  ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│   nric.cljc  │ │  redact.cljc │ │   scan.clj   │ │ checklist.cljc│
-│  ─ mod11     │ │  ─ pipeline  │ │  ─ rg --json │ │  ─ md parser │
-│  ─ regex     │ │  ─ placehldrs│ │  ─ classify  │ │  ─ mark      │
-└──────────────┘ └──────────────┘ └──────┬───────┘ └──────────────┘
-                                        │ compiles
-                                        ▼
-                                 ┌──────────────┐ ┌──────────────┐
-                                 │  rules.cljc  │ │  sarif.cljc  │
-                                 │  ─ rule pack │ │  ─ SARIF out │
-                                 │  ─ exports   │ │  ─ 2.1.0 log │
-                                 └──────────────┘ └──────────────┘
-
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  audit.clj   │ │  policy.clj  │ │  version.cljc│ │  report.cljc │
-│  ─ orchestr. │ │  ─ templates │ │  ─ rule stamp│ │  ─ md / html │
-└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
-```
-
-### Portable core / native adapters
-
-The extraction keeps the public namespaces and command surface stable while
-making the in-memory rules genuinely usable from ClojureScript. Portable
-namespaces accept and return ordinary Clojure data; they do not walk a
-filesystem or start a process.
-
-```
-caller text / scan lines
-          │
-          ▼
-    pdpa.detect ───────────────┐
-          │                    │
-          ├─ pdpa.nric          │
-          ├─ pdpa.redact        │
-          ├─ pdpa.rules         │
-          ├─ pdpa.sarif         │
-          ├─ pdpa.checklist     │
-          ├─ pdpa.report        │
-          └─ pdpa.audit-context │
-                               │
-native pdpa.scan ── rg --json ─┘
-native pdpa.audit/policy ── files, resources, process, clock adapter
-```
-
-| Namespace/file | Role | Platform boundary |
-|---|---|---|
-| `detect.cljc` | Compiles the shared rule pack, classifies line records, and builds the stable result | No process or filesystem; incomplete rule-pack coverage is explicit in `detect/coverage-boundary` |
-| `audit_context.cljc` | Builds deterministic report context and preserves the historical scanner compliance signal | Timestamp is injected by the native caller; it does not certify legal compliance |
-| `policy_template.cljc` | Replaces `<<KEY>>` placeholders in an in-memory template | Resource lookup and writes remain in `policy.clj` |
-| `nric.cljc`, `redact.cljc`, `rules.cljc`, `sarif.cljc`, `checklist.cljc`, `report.cljc`, `version.cljc` | Shared text/data/report primitives | JSON is behind `pdpa.json`; clock is behind `pdpa.clock`; native I/O branches are explicit |
-| `json.cljc`, `clock.cljc` | Small platform adapters | Cheshire/Java on the JVM and host JSON/Date in JavaScript |
-| `scan.clj` | Native ripgrep adapter | Keeps `--no-ignore` and the existing `.git/`, `node_modules/`, `target/`, `out/`, `.cpcache/` skip globs; delegates to `detect/result` |
-| `audit.clj`, `policy.clj`, `init.clj`, `shipit.clj`, `core.clj` | Native orchestration/API compatibility | Filesystem, process, resource, and CLI concerns stay here |
-
-No browser `File`/Worker adapter is included in this track. Adding one would
-be an independent adapter decision; the portable core is tested through
-Node and does not claim browser filesystem coverage.
-
-### Preserved behavior and explicit boundaries
-
-- `scan/scan` still returns the same `{:findings :counts :clean?}` shape and
-  still uses the native skip globs. Detection order and one-finding-per-line
-  behavior are unchanged.
-- Checklist marker semantics are intentionally unchanged: a marker makes only
-  a following checkbox eligible; it is not retroactive. The bundled checklist
-  places its markers after the section boxes, so this limitation remains
-  visible rather than being silently “fixed.”
-- The native audit/report wording is intentionally unchanged. Its
-  `COMPLIANT`/zero-critical signal is a scanner gate, not a complete PDPA
-  assessment; `audit-context/compliance-boundary` records that limitation.
-- The historical `redact/phone-re` expression is preserved as-is, including
-  its `;;`-comment/literal behavior; the phone-redaction correction is a
-  separate follow-up, not part of this extraction.
-- The portable detector covers the configured rule pack and Mod-11 validation
-  only. Filesystem traversal, binary decoding, contextual PII inference, and
-  legal compliance certification are outside its contract.
-
-### Namespaces
-
-| File | Purpose | Standalone deps |
-|---|---|---|
-| `detect.cljc` | In-memory rule matching, line classification, stable result aggregation | `pdpa.nric`, `pdpa.rules` |
-| `audit_context.cljc` | Deterministic report context + explicit incomplete compliance boundary | `clojure.string` |
-| `policy_template.cljc` | In-memory `<<KEY>>` template rendering | `clojure.string` |
-| `nric.cljc` | NRIC/FIN regex + Mod-11 check-digit algorithm | `clojure.string` only |
-| `redact.cljc` | Portable text pipeline plus native file/CLI branch | `pdpa.nric`; `clojure.java.io` under `:clj` |
-| `rules.cljc` | Tool-independent rule pack (PII + secrets data) + gitleaks/JSON exports | `pdpa.json` (platform adapter) |
-| `sarif.cljc` | Scan result → SARIF 2.1.0 map/string | `pdpa.json`, `pdpa.version` |
-| `report.cljc` | Audit context → Markdown / standalone HTML executive report | `pdpa.clock`, `pdpa.version` |
-| `checklist.cljc` | Portable marker/status transformation; native CLI branch | `clojure.string` |
-| `scan.clj` | Wraps `rg --json`; delegates classification to `pdpa.detect` | `babashka.process`, `cheshire`, `pdpa.detect` |
-| `audit.clj` | Orchestrator: scan → checklist → injected report context | native filesystem/process adapter + portable modules |
-| `policy.clj` | Loads templates and delegates in-memory filling | `pdpa.policy-template`; `clojure.java.io` |
-| `core.clj` | Public API — re-exports happy-path helpers | native compatibility layer |
-| `version.cljc` | Single source of rule version + PDPA stamp | none |
-| `json.cljc` / `clock.cljc` | JSON and clock platform boundaries | Cheshire/Java or host JS APIs |
-| `bb/init.bb` (logical) | Copies CHECKLIST + templates into target dir | `babashka.fs`, `babashka.cli` |
-
-### Key algorithms
-
-#### `pdpa.nric/valid?` — Mod-11 for Singapore NRIC/FIN
-
-The published Singapore NRIC check-digit algorithm (cross-checked
-against independent validators; see CHANGELOG):
-
-```
-Weights [2 7 6 5 4 3 2] over the 7 digits; +4 offset for T/G only (S/F +0):
-  idx = (weighted sum + offset) mod 11
-  S/T check-char = "JZIHGFEDCBA"[idx]
-  F/G check-char = "XWUTRQPNMLK"[idx]
-M prefix (2022+): same 7-digit weights, +3 offset, own table
-"XWUTRQPNJLK" (J at idx 8) — corroborated by independent validators.
-Valid iff check-char matches the last character (upper-cased).
-```
-
-Implemented fully in `src/pdpa/nric.cljc`.
-
-#### `pdpa.redact/redact-text` — pipeline
-
-1. Find all NRIC-shaped matches via `\b[STFG]\d{7}[A-Z]\b` **and** `M\d{7}[A-Z]\b` (FINs)
-2. Filter with `chksum-valid?` — **prevents false positives on hex strings**
-3. Find the historical SG phone expression (its `;;` comment/literal
-   behavior is preserved; see the follow-up contract)
-4. Find emails (RFC 5322 simplified)
-5. Replace with `[REDACTED_NRIC]`, `[REDACTED_PHONE]`, `[REDACTED_EMAIL]`
-
-#### `pdpa.detect/classify` — severity mapping
-
-| Pattern | Severity | Why |
-|---|---|---|
-| NRIC with valid Mod-11 | **CRITICAL** | Live personal data leak |
-| SG mobile with country code | **CRITICAL** | Live personal data leak |
-| `*_KEY=…` with hex ≥ 32 chars | **HIGH** | Likely credential |
-| `-----BEGIN … KEY-----` | **HIGH** | Private key |
-| `[A-Z_]+SECRET_KEY` literal | **MEDIUM** | Pattern risk, may be placeholder |
-| Email address | **LOW** | May be contact, may be test |
-| `password=` with non-empty value | **MEDIUM** | Risk even if test |
-
-#### `pdpa.checklist/auto-tick`
-
-For each obligation, the namespace defines a verifier against the supplied
-scan counts/evidence. The implementation is intentionally unchanged during
-this extraction:
-
-```
-(verify :purpose (fn [ctx] (zero? (get-in ctx [:scan :counts :medium]))))
-(verify :protection (fn [ctx]
-                      (and (zero? (get-in ctx [:scan :counts :critical]))
-                           (zero? (get-in ctx [:scan :counts :high]))
-                           (some #(= "SECURITY_HARDENING" %) (:evidence ctx)))))
-```
-
-The CHECKLIST.md file uses HTML-comment markers like
-`<!-- agent:verify-protection -->`. A marker arms only the next matching
-checkbox after it; it does not tick earlier boxes. This is a characterized
-preserved limitation, not a corrected behavior in the portability track.
-
-## Date 21 June 2026 — what we encode
-
-- `bb version` banner: `pdpa-sg 0.1.0 / Singapore PDPA 2026-06-21`
-- The "Safe NRIC deadline" is wired into the scan output as a **warning**, not an auto-fail (the code still allows NRICs as input because some legacy systems need them, but the warning is loud).
-- The Data Breach rule uses the **3 calendar days** value.
-- §26 cert list is in `resources/policies/DATA_TRANSFER_AGREEMENT.template.md` (not in code, so we don't have to keep a clojure list in sync with PDPC's evolving cert set).
-
-## Testing strategy
-
-| Test file | Cases |
+| File | Role |
 |---|---|
-| `nric_test.cljc` | valid S-series redacts, valid M-series FIN redacts, structural match with bad checksum does NOT redact (false-positive guard), valid NRIC survives round-trip |
-| `redact_test.cljc` | NRIC/email redaction, historical phone-pattern characterization, multi-PII in same string, idempotency |
-| `rules_test.cljc`, `sarif_test.cljc`, `report_test.cljc` | portable rule compilation, JSON/SARIF adapters, deterministic report output |
-| `checklist_test.cljc` | portable status/marker transformation; marker-placement limitation is characterized |
-| `portable_test.cljc` + `portable_fixtures.cljc` | shared fictional parity cases, incomplete detector/compliance boundaries, injected timestamps, template rendering |
-| `scan_test.clj` | native rg process/filesystem behavior, skip globs, path exclusions, and exit-shape smoke coverage |
-| `clojure -M:test:cljs` | the portable `.cljc` namespaces under Node, without native scan/filesystem tests |
+| `lisp/src/cli.lisp` | Parse flags, run the scan, set the exit code. |
+| `lisp/src/config.lisp` | Read the JSON config. |
+| `lisp/src/walk.lisp` | List files and apply skip rules. |
+| `lisp/src/strainer.lisp` | Compile rule tiers and screen lines. |
+| `lisp/src/match.lisp` | Match rule patterns. |
+| `lisp/src/nric.lisp` | Validate NRIC and FIN check digits. |
+| `lisp/src/rules.lisp` | Hold the 20-rule pack. |
+| `lisp/src/scan.lisp` | Build findings, counts, and the clean flag. |
+| `lisp/src/detect.lisp` | Apply rule tiers to a line. |
+| `lisp/src/telemetry.lisp` | Record speed and batch adaptation. |
+| `lisp/src/json.lisp` | Write JSON. |
+| `lisp/src/sarif.lisp` | Write SARIF 2.1.0. |
+| `lisp/src/policy.lisp` | Apply severity thresholds. |
+| `lisp/src/text.lisp` | Text helpers. |
+| `lisp/src/version.lisp` | Package version and rule stamp. |
+| `lisp/test/test.lisp` | Test suite. |
+| `lisp/build.lisp` | Build script. |
+| `lisp/pdpa-sg.asd` | ASDF system definition. |
 
-## Why Babylon splits (nric/redact/scan/checklist/policy/audit/core/version)?
+## Data flow
 
-- **Testability** — each namespace has a small, well-defined interface
-- **Single responsibility** — the scanner doesn't know about templates; the redactor doesn't know about the scanner
-- **REPL friendliness** — you can `(require '[pdpa.nric :as nric])` standalone to check a regex with no startup cost
-- **Composability for AI agents** — A code-generation agent can pick the right namespace based on the task ("redact" → `pdpa.redact`, "audit" → `pdpa.audit`)
+```text
+target path
+  -> walk.lisp
+  -> strainer.lisp
+  -> match.lisp + nric.lisp
+  -> scan.lisp
+  -> json.lisp or sarif.lisp
+  -> stdout or --out file
+```
 
-## Future work
+1. `walk.lisp` lists regular files under the target.
+2. `walk.lisp` skips `.git`, `node_modules`, `target`, `out`, and `.cpcache`.
+3. `strainer.lisp` reads each file line by line.
+4. `detect.lisp` applies the critical tier and, at depth 2, the standard tier.
+5. `match.lisp` tests rule patterns. `nric.lisp` validates NRIC and FIN check
+   digits.
+6. `scan.lisp` collects findings and counts.
+7. `sarif.lisp` writes the selected output format.
+8. `cli.lisp` sets exit code `0`, `1`, or `2`.
 
-- [x] `gitleaks` interop — done as one-way export (`bb export-rules --format gitleaks`);
-  a live `--backend gitleaks` merge remains optional
-- [ ] Correct checklist marker placement/semantics in a separate behavior
-  change; the current placement limitation is intentionally preserved here
-- [ ] Replace native scanner-gate compliance wording with a separately reviewed
-  legal/compliance vocabulary; the current wording is intentionally preserved
-- [ ] Add a browser `File`/Worker adapter only with independent, offline tests;
-  no Reagent dependency is part of this track
-- [ ] Differential privacy layer for analytics (Obligation 6)
-- [x] CI workflow template (GitHub Actions YAML) for `bb audit` on every push
-  — done: `.github/workflows/ci.yml` (test job + SARIF scan job)
-- [x] Pre-commit hook (`.git/hooks/pre-commit`) that blocks commits containing raw NRICs
-  — done: `scripts/git-hooks/pre-commit` + `bb install-hook`
-- [ ] Native PDF emitter (today: HTML report + pandoc/headless-chrome conversion)
-- [ ] Publish `pdpa-vscode` extension to the VS Code Marketplace (scaffold ready)
+## Rule pack
+
+`lisp/src/rules.lisp` holds 20 rules. Each rule has:
+
+- an identifier,
+- a severity,
+- a family,
+- a pattern or predicate,
+- a message.
+
+The rule families cover NRIC and FIN numbers, contact data, credentials,
+financial data, health data, logging, transfers, and policy gaps.
+
+The scanner is line based. It does not build a data-flow graph. A finding means
+that a line matches a rule. A human must confirm the context.
+
+The `pdpa:ignore` marker skips a line. Use it for fictional test data and
+documentation examples.
+
+## Strainer and telemetry
+
+The strainer is a mutable CLOS object. It holds:
+
+- the active rule set,
+- the batch size,
+- the inspection depth,
+- the velocity monitor.
+
+The critical tier holds critical and high rules. The standard tier holds medium
+and low rules. At depth 1 the engine skips the standard tier.
+
+The strainer compiles each tier into a function with `compile`. This keeps the
+line loop small.
+
+The velocity monitor measures records per second. After each batch it classifies
+the rate:
+
+- A surge doubles the batch and restores full depth.
+- A slowdown halves the batch.
+- At the minimum batch size, a slowdown also lowers the depth by one tier.
+
+The JSON `telemetry` object records velocity, peak, mean, records, batches, batch
+size, depth, adaptations, last signal, mesh rebuilds, and the degraded flag.
+
+## CLI contract
+
+The CLI accepts:
+
+- `--target` or `-t`
+- `--config`
+- `--format json|sarif`
+- `--out`
+- `--batch`
+- `--depth`
+- `--velocity`
+- `--help` or `-h`
+- `--version` or `-V`
+
+The saved binary uses the SBCL runtime for `--help` and `--version`. Those two
+flags print SBCL information. The tool handles all other flags.
+
+Exit codes:
+
+- `0`: scan completed. Findings do not change the code.
+- `1`: scan, config, or write error.
+- `2`: bad usage.
+
+## Output contracts
+
+### JSON
+
+The result object has:
+
+- `findings`: array of finding objects.
+- `counts`: counts by severity and rule.
+- `clean`: `true` when no finding exists.
+- `telemetry`: scan speed and adaptation data.
+
+### SARIF
+
+The SARIF document uses version 2.1.0. It has:
+
+- `driver.rules`: the rule metadata.
+- `results`: the findings.
+- `informationUri`: the repository URL.
+
+## Config
+
+The config is JSON. Supported keys:
+
+- `maxCritical`: maximum allowed critical findings.
+- `maxHigh`: maximum allowed high findings.
+- `excludes`: path fragments to skip.
+
+The policy layer fails when a threshold is exceeded. The scan still exits `0`
+unless a config or read error occurs.
+
+## Tests
+
+`lisp/test/test.lisp` holds the test suite. It covers:
+
+- NRIC and FIN check digits.
+- Rule matching.
+- `pdpa:ignore` behaviour.
+- File walk and skip rules.
+- JSON and SARIF shape.
+- Policy thresholds.
+- CLI parsing.
+- Telemetry.
+
+Run:
+
+```bash
+sbcl --non-interactive --load lisp/test/test.lisp
+```
+
+Expected final line:
+
+```text
+TESTS DONE checks=98 tests=15 failures=0
+```
+
+## CI
+
+`.github/workflows/ci.yml` has two jobs:
+
+1. `sbcl`: install SBCL, run tests, build the scanner, check JSON output, check
+   SARIF output.
+2. `lint`: fail when a legacy source or package file exists.
+
+The CI has no other runtime.
+
+## Limits
+
+- The scanner is line based.
+- The scanner does not redact data.
+- The scanner does not edit the checklist.
+- The scanner does not replace legal review.
+- The rule pack is a triage aid, not a complete PDPA test suite.

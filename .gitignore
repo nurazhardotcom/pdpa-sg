@@ -1,10 +1,3 @@
-.cpcache/
-.cljs_node_repl/
-*.class
-/target/
-/out/
-.lein-env
-*.jar
 *.log
 
 # Editor
@@ -27,15 +20,7 @@ audit.md
 audit.sarif
 audit.html
 
-# Node (VS Code extension scaffold)
-**/node_modules/
-editors/pdpa-vscode/out/
-
-# Redact backups
-*.redact.bak
-*.redact.bak.*
-
-# Secrets & credentials
+# Secrets and credentials
 .env
 .env.*
 *.pem
@@ -58,7 +43,6 @@ policies/DPIA.md
 
 # CI artifacts
 public/
-
 
 # SBCL build output
 /bin/
