@@ -1,6 +1,6 @@
 (in-package #:pdpa-sg)
 
-(defparameter *toolkit-version* "0.5.0")
+(defparameter *toolkit-version* "0.5.1")
 (defparameter *pdpa-rule-stamp* "2026-06-21")
 (defparameter *tool-name* "pdpa-sg")
 (defparameter *repo-uri* "https://github.com/nurazhardotcom/pdpa-sg")

@@ -1,6 +1,6 @@
 (asdf:defsystem "pdpa-sg"
   :description "PDPA SG Common Lisp scanner: scan, detect, JSON, SARIF."
-  :version "0.5.0"
+  :version "0.5.1"
   :author "Nur Azhar <dev@nurazhar.com>"
   :licence "MIT"
   :serial t

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-08
+
+### Verified
+- End-to-end integration with the nurazhar.com site build, now Common Lisp:
+  the ASDF system loads through the local source registry, all 207 posts scan
+  with exit 0, and no critical or high finding is raised.
+- Report shape and exit codes unchanged when driven from the site's PDPA gate.
+
+No scanner code changed in this release; the patch version records the
+compatibility verification against the rewritten build pipeline.
+
 ## [0.5.0] - 2026-11-08
 
 ### Changed
