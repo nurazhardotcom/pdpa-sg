@@ -1,12 +1,11 @@
 # pdpa-sg-clj 🇸🇬🛡️
 
-> **Status:** Active — maintained. See [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
 
 [![GitHub tag](https://img.shields.io/github/v/tag/nurazhardotcom/pdpa-sg-clj)](https://github.com/nurazhardotcom/pdpa-sg-clj/releases)
 [![CI](https://github.com/nurazhardotcom/pdpa-sg-clj/actions/workflows/ci.yml/badge.svg)](https://github.com/nurazhardotcom/pdpa-sg-clj/actions)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
-`pdpa-sg-clj v0.3.0` · Last verified 2026-09-06 · MIT ©2026 Nur Azhar
+`pdpa-sg-clj v0.3.0` · Last verified 2026-11-08 · MIT ©2026 Nur Azhar
 
 > **Singapore PDPA compliance toolkit for AI agents — read this README top-to-bottom, tick the checklist, you're done.**
 
@@ -108,6 +107,7 @@ This repo ships a checklist (above), a scanner, a redactor, eight policy templat
 | **Clojure CLI ≥ 1.12** | Runs the library/native tests | [clojure.org/guides/install_clojure](https://clojure.org/guides/install_clojure) |
 | **Node.js ≥ 18** | Runs the portable ClojureScript test bundle | [nodejs.org](https://nodejs.org/) |
 | **ripgrep (`rg`)** | Scanner backend | `apt install ripgrep` / `brew install ripgrep` |
+| **SBCL ≥ 2.4** | Optional: runs the standalone engine in `lisp/` | [sbcl.org](https://www.sbcl.org/) |
 
 ### Install as a dependency (Clojure)
 
@@ -231,6 +231,48 @@ SARIF uploads straight into GitHub code scanning (wired in
 ### `bb dpo [name email]`
 Generates a public DPO contact page from `DPO_CONTACT.template.md`.
 
+## 🧩 Standalone SBCL engine (zero dependencies)
+
+`lisp/` holds a scanner for hosts without a JVM. It needs SBCL and ASDF
+only. It does not load Quicklisp and does not use `cl-ppcre`, `yason`, or
+`alexandria`.
+
+| Item | Value |
+|---|---|
+| ASDF systems | `pdpa-sbcl`, `pdpa-sbcl/tests` |
+| Rules | 20, same families as `src/pdpa/rules.cljc` |
+| Output | JSON and SARIF 2.1.0 |
+| Tests | 98 checks in 15 tests |
+
+```bash
+sbcl --non-interactive --load lisp/test/test.lisp   # tests; exit 0 on pass
+sbcl --non-interactive --load lisp/build.lisp       # writes bin/pdpa-sbcl
+bin/pdpa-sbcl --target . --format sarif --out audit.sarif
+bin/pdpa-sbcl --target . --format json
+```
+
+Flags: `--target`/`-t`, `--config`, `--format json|sarif`, `--out`,
+`--batch`, `--depth`, `--velocity`.
+Exit codes: `0` scan completed, `1` scan/config/write error, `2` bad usage.
+
+The saved binary's SBCL runtime handles `--help` and `--version` before the
+tool starts. Use the flags above with the executable.
+
+The engine uses a mutable CLOS strainer. The strainer holds the predicate
+set, the batch size, and the inspection depth. A velocity monitor measures
+records per second. After each batch the strainer classifies the velocity.
+A surge doubles the batch and restores full depth. A slowdown halves the
+batch. At the minimum batch size, a slowdown also lowers the depth by one
+tier. The JSON result carries a `telemetry` object with velocity, peak,
+batch size, depth, and adaptation count.
+
+The strainer compiles each tier into a function with `compile`. The
+critical tier holds `:critical` and `:high` rules. The standard tier holds
+`:medium` and `:low` rules. At depth 1 the engine skips the standard tier.
+
+`lisp/` is a separate implementation. It does not share code with
+`src/pdpa/`. Update both rule packs when rules change.
+
 ---
 ## ⚙️ How it works
 
@@ -263,6 +305,10 @@ Steps in the diagram:
 4. The scan result holds `findings`, `counts`, and `clean flag`.
 5. `pdpa.audit` adds published evidence files and `pdpa.checklist` status.
 6. `pdpa.sarif` and `pdpa.report` write JSON, SARIF 2.1.0, HTML, and Markdown. Use `bb scan` for step 1 to 4. Use `bb audit` for step 1 to 6.
+
+The standalone SBCL engine in `lisp/` follows the same pipeline:
+`walk.lisp` lists files, `strainer.lisp` screens lines against the rule
+pack, `scan.lisp` builds the result, and `sarif.lisp` writes JSON or SARIF.
 
 ---
 
@@ -341,7 +387,8 @@ these give warnings *before* `git commit`:
   (see `editors/vscode/extensions.json`).
 - **VS Code extension:** `editors/pdpa-vscode/` is a full extension
   (`bb scan --format sarif` → inline diagnostics, rescan on save).
-  Publish with `vsce publish` (publisher: `nurazhardotcom`).
+  The source type-checks. Marketplace publish is pending (owner action;
+  publisher `nurazhardotcom`).
 - **Neovim:** `editors/nvim/pdpa.lua` provides `:PdpaScan [path]`,
   pushing findings to the quickfix list.
 
@@ -354,10 +401,18 @@ pdpa-sg-clj/
 ├── README.md                          ← you are here
 ├── CHECKLIST.md                       ← the master 11-obligation checklist
 ├── ARCHITECTURE.md                    ← design notes for contributors
+├── AGENTS.md                          ← operator notes for AI agents
+├── AI_DISCLOSURE.md                   ← AI use disclosure
+├── SECURITY.md                        ← security policy
+├── CHANGELOG.md                       ← release notes
+├── VERSION                            ← 0.3.0
 ├── LICENSE                            ← MIT
 ├── deps.edn                           ← Clojure deps
 ├── bb.edn                             ← Babashka tasks (CLI surface)
 ├── .github/workflows/ci.yml            ← GitHub Actions CI (test + SARIF scan)
+├── scripts/
+│   ├── blog-scan.bb                    ← scan helper
+│   └── git-hooks/pre-commit           ← pre-commit scan hook
 ├── editors/
 │   ├── vscode/tasks.json                ← VS Code task + problemMatcher
 │   ├── nvim/pdpa.lua                    ← Neovim :PdpaScan quickfix
@@ -376,18 +431,32 @@ pdpa-sg-clj/
 │   ├── report.cljc                     ← Markdown/HTML auditor reports
 │   ├── checklist.cljc                  ← portable status/marker transform
 │   ├── audit.clj                       ← native orchestrator
+│   ├── init.clj                        ← bb init task
 │   ├── policy.clj                      ← native resource/file template adapter
+│   ├── shipit.clj                      ← shipit task
 │   └── version.cljc                    ← semver + PDPA rule version
-├── test/pdpa/*_test.cljc               ← portable tests; scan_test.clj stays native
-├── test/pdpa/test_runner.cljs            ← Node ClojureScript test entry point
-├── test/pdpa/portable_fixtures.cljc    ← shared fictional parity fixtures
+├── test/
+│   ├── runner.clj                      ← JVM test runner
+│   └── pdpa/
+│       ├── *_test.cljc                 ← portable tests; scan_test.clj stays native
+│       ├── test_runner.cljs            ← Node ClojureScript test entry point
+│       └── portable_fixtures.cljc      ← shared fictional parity fixtures
 ├── resources/policies/
 │   ├── PRIVACY_POLICY.template.md
 │   ├── DPO_CONTACT.template.md
 │   ├── CONSENT_FORM.template.md
 │   ├── DATA_BREACH_RESPONSE.template.md   ← 3-day PDPC notification
 │   ├── DATA_TRANSFER_AGREEMENT.template.md ← §26 overseas-standard
-│   └── DPIA.template.md                   ← Data Protection Impact Assessment
+│   ├── DPIA.template.md                   ← Data Protection Impact Assessment
+│   ├── RETENTION_SCHEDULE.template.md     ← retention limits
+│   └── SECURITY_HARDENING.template.md     ← protection measures
+├── lisp/                              ← standalone SBCL engine (zero deps)
+│   ├── pdpa-sbcl.asd                  ← ASDF systems: pdpa-sbcl, pdpa-sbcl/tests
+│   ├── build.lisp                     ← save-lisp-and-die → bin/pdpa-sbcl
+│   ├── src/                           ← text, json, nric, match, rules, telemetry,
+│   │                                   strainer, walk, detect, scan, sarif,
+│   │                                   policy, config, cli, package, version
+│   └── test/test.lisp                 ← plain assertion harness, 98 checks
 └── examples/minimal_project/
 ```
 
@@ -401,6 +470,7 @@ bb test           # Babashka/native + portable JVM tests
 clojure -M:test   # JVM test runner
 bb test:cljs      # same portable suite compiled and run on Node
 clj-kondo --lint src test scripts --fail-level warning
+sbcl --non-interactive --load lisp/test/test.lisp   # standalone engine: 98 checks, 15 tests
 bb scan src/pdpa  # bounded native scan; vendor/build skip globs stay enabled
 ```
 
@@ -432,6 +502,7 @@ Run `bb about` any time to see the rule version stamp.
 - **Babashka 1.4+** — CLI tasks (zero JVM startup)
 - **Cheshire 5.13 / host JSON** — platform JSON adapter
 - **ripgrep** — native scanner backend (via `babashka.process/sh`)
+- **SBCL 2.4+** — standalone zero-dependency engine in `lisp/` (SBCL + ASDF only)
 
 ### Portable core and native boundary
 
