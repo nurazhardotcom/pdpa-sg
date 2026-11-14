@@ -243,7 +243,6 @@ pdpa-sg/
 ├── CHECKLIST.md
 ├── ARCHITECTURE.md
 ├── AGENTS.md
-├── AI_DISCLOSURE.md
 ├── SECURITY.md
 ├── CHANGELOG.md
 ├── VERSION
